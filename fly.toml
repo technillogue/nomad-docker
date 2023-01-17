@@ -31,13 +31,32 @@ kill_timeout = 5
     handlers = ["tls", "http"]
     port = 443
 
+# rest api and ui
 [[services]]
   internal_port = 4646
   protocol = "tcp"
 
   [[services.ports]]
-    handles = ["http"]
+    handlers = ["tls", "http"]
     port = 4646
+
+# rpc
+[[services]]
+  internal_port = 4646
+  protocol = "tcp"
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 4647
+
+# gossip
+[[services]]
+  internal_port = 4648
+  protocol = "udp"
+
+  [[services.ports]]
+    port = 4648
+
 #4646 4647 4648 4648/udp
 # [[mounts]]
 #   destination = "/data"

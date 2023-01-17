@@ -11,6 +11,7 @@ fi
 # su -c 'nomad agent -dev -bind 0.0.0.0 -log-level INFO' nomad &
 nomad agent -dev -bind 0.0.0.0 -log-level INFO &
 dockerd -p /var/run/docker.pid &
-wait -n
+nomad job run /app.nomad
+wait
 # echo "Running $@"
 # exec "$@"
