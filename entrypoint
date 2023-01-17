@@ -9,9 +9,9 @@ echo "Running docker-entrypoint.d files"
 fi
 
 # su -c 'nomad agent -dev -bind 0.0.0.0 -log-level INFO' nomad &
-nomad agent -dev -bind 0.0.0.0 -log-level INFO &
+nomad agent -dev-connect -bind 0.0.0.0 -log-level INFO &
 dockerd -p /var/run/docker.pid &
-nomad job run /app.nomad
+#nomad job run /app.nomad
 wait
 # echo "Running $@"
 # exec "$@"

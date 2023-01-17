@@ -1,6 +1,6 @@
 # fly.toml file generated for docker-for-kurt on 2021-06-23T18:04:47-05:00
 
-app = "nomadock"
+app = "sylv-nomad-test"
 
 kill_signal = "SIGINT"
 kill_timeout = 5
@@ -41,21 +41,20 @@ kill_timeout = 5
     port = 4646
 
 # rpc
-[[services]]
-  internal_port = 4646
-  protocol = "tcp"
+# [[services]]
+#   internal_port = 4646
+#   protocol = "tcp"
 
-  [[services.ports]]
-    handlers = ["tls", "http"]
-    port = 4647
+#   [[services.ports]]
+#     port = 4647
 
-# gossip
-[[services]]
-  internal_port = 4648
-  protocol = "udp"
+# # gossip
+# [[services]]
+#   internal_port = 4648
+#   protocol = "udp"
 
-  [[services.ports]]
-    port = 4648
+#   [[services.ports]]
+#     port = 4648
 
 #4646 4647 4648 4648/udp
 # [[mounts]]

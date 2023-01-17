@@ -1,4 +1,4 @@
-job "web" {
+job "mirror" {
   datacenters = ["dc1"]
 
   type = "service"
@@ -24,7 +24,8 @@ job "web" {
     #
     network {
       port "web" {
-        to = 8080
+	static = 8080
+        to = 3000
       }
     }
 
@@ -229,7 +230,7 @@ job "web" {
       #     https://www.nomadproject.io/docs/job-specification/resources
       #
       resources {
-        cpu    = 500 # 500 MHz
+        cpu    = 250 # 500 MHz
         memory = 256 # 256MB
       }
 
