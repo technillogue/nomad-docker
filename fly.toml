@@ -57,6 +57,25 @@ kill_timeout = 5
 #     port = 4648
 
 #4646 4647 4648 4648/udp
+
+# elasticsearch
+[[services]]
+  internal_port = 9200
+  protocol = "tcp"
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 9200
+
+# kibana
+[[services]]
+  internal_port = 5601
+  protocol = "tcp"
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 5601
+
 # [[mounts]]
 #   destination = "/data"
 #   source = "data"

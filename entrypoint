@@ -8,10 +8,24 @@ echo "Running docker-entrypoint.d files"
 /bin/run-parts docker-entrypoint.d
 fi
 
+function test_ssh {
+  curl http://0.0.0.0:4646/v1/status/leader
+  echo $?
+}
+function run_app {
+  while [ $(test_ssh) -ne 0 ]
+  do
+    echo "Waiting for nomad..."
+    sleep 2
+  done
+  nomad job run /app.nomad
+  nomad job run /EK.nomad
+}
+
 # su -c 'nomad agent -dev -bind 0.0.0.0 -log-level INFO' nomad &
 nomad agent -dev-connect -bind 0.0.0.0 -log-level INFO &
 dockerd -p /var/run/docker.pid &
-#nomad job run /app.nomad
+run_app &
 wait
 # echo "Running $@"
 # exec "$@"
