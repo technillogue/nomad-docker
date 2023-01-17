@@ -1,0 +1,16 @@
+#!/bin/bash
+
+set -ex
+
+if [[ -d "docker-entrypoint.d" ]]
+then
+echo "Running docker-entrypoint.d files"
+/bin/run-parts docker-entrypoint.d
+fi
+
+# su -c 'nomad agent -dev -bind 0.0.0.0 -log-level INFO' nomad &
+nomad agent -dev -bind 0.0.0.0 -log-level INFO &
+dockerd -p /var/run/docker.pid &
+wait -n
+# echo "Running $@"
+# exec "$@"
