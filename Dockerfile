@@ -28,7 +28,7 @@ COPY ./docker-entrypoint.d/* ./docker-entrypoint.d/
 
 #USER nomad
 COPY ./server.hcl /etc/nomad.d/server.hcl
-COPY ./app.nomad ./EK.nomad ./filebeat.nomad /
+COPY ./app.nomad ./EK.nomad  /
 EXPOSE 8080 4646 4647 4648 4648/udp
 ENTRYPOINT ["./entrypoint"]
 

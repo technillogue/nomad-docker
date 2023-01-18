@@ -43,7 +43,7 @@ job "elastic" {
 
       env {
         ES_JAVA_OPTS = "-Xms256m -Xmx1g"
-        #ELASTIC_PASSWORD = "mysecretpassword"
+        ELASTIC_PASSWORD = "mysecretpassword"
       }
 
       template {
@@ -54,11 +54,11 @@ discovery.type: single-node
 xpack.license.self_generated.type: basic
 xpack.security.enabled: false
 xpack.monitoring.collection.enabled: true
-# xpack.security.authc:
-#     anonymous:
-#       username: anonymous_user 
-#       roles: search_agent
-#       authz_exception: true 
+xpack.security.authc:
+    anonymous:
+      username: anonymous_user 
+      roles: search_agent
+      authz_exception: true 
       
 http.cors.enabled : true
 http.cors.allow-origin: "*"
@@ -127,7 +127,7 @@ path.repo: ["/snapshots"]
       }
 
       resources {
-        cpu    = 400
+        cpu    = 800
         memory = 1024
       }
     }
@@ -206,7 +206,7 @@ path.repo: ["/snapshots"]
       }
       resources {
         cpu    = 500
-        memory = 512
+        memory = 400
 
       }
     }
@@ -229,20 +229,34 @@ path.repo: ["/snapshots"]
 
       template {
         data = <<EOH
-output.elasticsearch:
-  hosts: ["http://${NOMAD_ADDR_es_port}"]
-  username: "filebeat_internal"
-  #password: "YOUR_PASSWORD" 
-  ssl:
-    enabled: false
 filebeat.inputs:
 - type: filestream
   id: logs
   paths:
     - /tmp/nomad/**/std*
     - /tmp/host/nomad_log
+filebeat.autodiscover:
+  providers:
+    - type: nomad
+      hints.enabled: true
+      allow_stale: true
+      templates:
+          config:
+            - type: log
+              paths:
+                - /tmp/nomad/alloc/${data.nomad.allocation.id}/alloc/logs/${data.nomad.task.name}.std*
+              exclude_lines: ["^\\s+[\\-`('.|_]"]  # drop asciiart lines
+output.elasticsearch:
+  hosts: ["http://${NOMAD_ADDR_es_port}"]
+  username: "elastic"
+  password: "mysecretpassword" 
+  ssl:
+    enabled: false
+logging:
+  to_stderr: true
+setup.kibana:
+  host: "http://${NOMAD_ADDR_kibana}"
           EOH
-
         destination = "local/filebeat/filebeat.yml"
       }
 
@@ -283,7 +297,7 @@ filebeat.inputs:
 
       resources {
         cpu    = 200
-        memory = 128
+        memory = 256
       }
     }
   }

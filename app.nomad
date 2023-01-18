@@ -231,7 +231,7 @@ job "mirror" {
       #
       resources {
         cpu    = 250 # 500 MHz
-        memory = 256 # 256MB
+        memory = 128 # 256MB
       }
 
 
