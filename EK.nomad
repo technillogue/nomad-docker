@@ -18,11 +18,11 @@ job "elastic" {
     network {
       port "es_port" {
         static = 9200
-	to = 9200
+        to     = 9200
       }
       port "tcp" {
         static = 9300
-	to = 9300
+        to     = 9300
       }
       port "kibana" {
         static = 5601
@@ -42,8 +42,8 @@ job "elastic" {
       kill_signal  = "SIGTERM"
 
       env {
-        ES_JAVA_OPTS     = "-Xms256m -Xmx1g"
-        ELASTIC_PASSWORD = "mysecretpassword"
+        ES_JAVA_OPTS = "-Xms256m -Xmx1g"
+        #ELASTIC_PASSWORD = "mysecretpassword"
       }
 
       template {
@@ -54,11 +54,11 @@ discovery.type: single-node
 xpack.license.self_generated.type: basic
 xpack.security.enabled: false
 xpack.monitoring.collection.enabled: true
-xpack.security.authc:
-    anonymous:
-      username: anonymous_user 
-      roles: search_agent
-      authz_exception: true 
+# xpack.security.authc:
+#     anonymous:
+#       username: anonymous_user 
+#       roles: search_agent
+#       authz_exception: true 
       
 http.cors.enabled : true
 http.cors.allow-origin: "*"
@@ -80,9 +80,9 @@ path.repo: ["/snapshots"]
 
       config {
         #network_mode = "host"
-        image        = "docker.elastic.co/elasticsearch/elasticsearch:8.3.2"
-        command      = "elasticsearch"
-        ports        = ["es_port", "tcp"]
+        image   = "docker.elastic.co/elasticsearch/elasticsearch:8.6.0"
+        command = "elasticsearch"
+        ports   = ["es_port", "tcp"]
         volumes = [
           "local/elastic/snapshots:/snapshots",
           "local/elastic/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml",
@@ -140,16 +140,17 @@ path.repo: ["/snapshots"]
       kill_signal  = "SIGTERM"
 
       config {
-        image   = "docker.elastic.co/kibana/kibana:7.6.2"
+        image   = "docker.elastic.co/kibana/kibana:8.6.0"
         command = "kibana"
-
+        ports   = ["kibana"]
         # https:#www.elastic.co/guide/en/kibana/current/settings.html
         # https:#www.elastic.co/guide/en/kibana/current/settings-xpack-kb.html
         args = [
           #"--elasticsearch.url=http:#${NOMAD_JOB_NAME}.service.consul:80",
           #"--elasticsearch.url=http:#${NOMAD_JOB_NAME}-kibana.service.consul:9200",
           "--elasticsearch.hosts=http://${NOMAD_ADDR_es_port}",
-	  "--elasticsearch.password=mysecretpassword",
+          #"--elasticsearch.password=mysecretpassword",
+          #"--xpack.security.enabled=false",
           "--server.host=0.0.0.0",
           "--server.name=kibana-server",
           "--server.port=${NOMAD_PORT_kibana}",
@@ -177,18 +178,18 @@ path.repo: ["/snapshots"]
       }
 
 
-#       template {
-#           data = <<EOH
-# server.name: kibana
-# server.host: 0.0.0.0
-# server.publicBaseUrl: https://my.kibana.com
-# elasticsearch.hosts: [ "http://my.server.ip:9200" ]
-# monitoring.ui.container.elasticsearch.enabled: true
-# elasticsearch.username: kibana_system
-# elasticsearch.password: 'mykibanapassword'
-#           EOH
-#           destination = "local/kibana/kibana.yml"
-#       }
+      #       template {
+      #           data = <<EOH
+      # server.name: kibana
+      # server.host: 0.0.0.0
+      # server.publicBaseUrl: https://my.kibana.com
+      # elasticsearch.hosts: [ "http://my.server.ip:9200" ]
+      # monitoring.ui.container.elasticsearch.enabled: true
+      # elasticsearch.username: kibana_system
+      # elasticsearch.password: 'mykibanapassword'
+      #           EOH
+      #           destination = "local/kibana/kibana.yml"
+      #       }
 
       service {
         name     = "kibana"
@@ -209,5 +210,82 @@ path.repo: ["/snapshots"]
 
       }
     }
+    volume "tmp_vol" {
+      type      = "host"
+      read_only = true
+      source    = "tmp"
+    }
+
+    volume "nomad_vol" {
+      type      = "host"
+      read_only = true
+      source    = "nomad"
+    }
+
+    task "filebeat_container" {
+      driver       = "docker"
+      kill_timeout = "600s"
+      kill_signal  = "SIGTERM"
+
+      template {
+        data = <<EOH
+output.elasticsearch:
+  hosts: ["http://${NOMAD_ADDR_es_port}"]
+  username: "filebeat_internal"
+  #password: "YOUR_PASSWORD" 
+  ssl:
+    enabled: false
+filebeat.inputs:
+- type: filestream
+  id: logs
+  paths:
+    - /tmp/nomad/**/std*
+    - /tmp/host/nomad_log
+          EOH
+
+        destination = "local/filebeat/filebeat.yml"
+      }
+
+
+      config {
+        image      = "docker.elastic.co/beats/filebeat:8.6.0"
+        # entrypoint = ["/usr/bin/sleep", "1d"]
+        # command = "filebeat"
+        # ports   = ["es_port", "tcp"]
+        volumes = [
+          "local/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml",
+        ]
+
+        ulimit {
+          memlock = "-1"
+          nofile  = "65536"
+          nproc   = "8192"
+        }
+      }
+      volume_mount {
+        volume      = "tmp_vol"
+        destination = "/tmp/host" #<-- in the container
+        read_only   = true
+      }
+      volume_mount {
+        volume      = "nomad_vol"
+        destination = "/tmp/nomad" #<-- in the container
+        read_only   = true
+      }
+
+
+      service {
+        name     = "filebeat"
+        tags     = ["global"]
+        provider = "nomad"
+        #port     = "es_port"
+      }
+
+      resources {
+        cpu    = 200
+        memory = 128
+      }
+    }
   }
+
 }

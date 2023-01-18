@@ -43,7 +43,6 @@ kill_timeout = 5
 # rpc
 # [[services]]
 #   internal_port = 4646
-#   protocol = "tcp"
 
 #   [[services.ports]]
 #     port = 4647
@@ -61,6 +60,7 @@ kill_timeout = 5
 # elasticsearch
 [[services]]
   internal_port = 9200
+
   protocol = "tcp"
 
   [[services.ports]]
@@ -76,6 +76,6 @@ kill_timeout = 5
     handlers = ["tls", "http"]
     port = 5601
 
-# [[mounts]]
-#   destination = "/data"
-#   source = "data"
+[[mounts]]
+  destination = "/data"
+  source = "data"

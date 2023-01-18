@@ -22,8 +22,10 @@ function run_app {
   nomad job run /EK.nomad
 }
 
+mkdir -p /data/nomad
+syslog-ng &
 # su -c 'nomad agent -dev -bind 0.0.0.0 -log-level INFO' nomad &
-nomad agent -dev-connect -bind 0.0.0.0 -log-level INFO &
+nomad agent -config /etc/nomad.d/server.hcl -dev-connect -bind 0.0.0.0 -log-level INFO  2>&1 | tee /tmp/nomad_log &
 dockerd -p /var/run/docker.pid &
 run_app &
 wait
