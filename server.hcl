@@ -1,11 +1,15 @@
 data_dir             = "/data/nomad"
 disable_update_check = true
-enable_syslog        = true
+enable_syslog        = false
 plugin_dir           = "/usr/lib/nomad/plugins"
 
 server {
   enabled          = true
   bootstrap_expect = 1
+}
+
+tls {
+  http = false # handled by fly
 }
 
 client {

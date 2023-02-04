@@ -42,7 +42,7 @@ job "elastic" {
       kill_signal  = "SIGTERM"
 
       env {
-        ES_JAVA_OPTS = "-Xms256m -Xmx1g"
+        ES_JAVA_OPTS     = "-Xms256m -Xmx1g"
         ELASTIC_PASSWORD = "mysecretpassword"
       }
 
@@ -153,6 +153,7 @@ path.repo: ["/snapshots"]
           #"--xpack.security.enabled=false",
           "--server.host=0.0.0.0",
           "--server.name=kibana-server",
+          "--server.publicBaseUrl=https://sylv-nomad-test.fly.dev:5601",
           "--server.port=${NOMAD_PORT_kibana}",
           #"--path.data=/alloc/data",
           #"--elasticsearch.preserveHost=false",
@@ -161,19 +162,6 @@ path.repo: ["/snapshots"]
           #"--xpack.graph.enabled=false",
           #"--xpack.ml.enabled=false",
         ]
-
-        # mounts = [
-        #   # sample volume mount
-        #   {
-        #     type     = "bind"
-        #     target   = "/etc/kibana/"                   #"/path/in/container"
-        #     source   = "/opt/elastic/vol_kibana/config" #"/path/in/host"
-        #     readonly = false
-        #     bind_options {
-        #         propagation = "rshared"
-        #     }
-        #   }
-        # ]
 
       }
 
@@ -206,7 +194,7 @@ path.repo: ["/snapshots"]
       }
       resources {
         cpu    = 500
-        memory = 400
+        memory = 768
 
       }
     }
@@ -226,14 +214,14 @@ path.repo: ["/snapshots"]
       driver       = "docker"
       kill_timeout = "600s"
       kill_signal  = "SIGTERM"
-
+      # autodiscover does not work at all
       template {
-        data = <<EOH
+        data        = <<EOH
 filebeat.inputs:
 - type: filestream
   id: logs
   paths:
-    - /tmp/nomad/**/std*
+    - /tmp/nomad/alloc/*/alloc/logs/*
     - /tmp/host/nomad_log
 filebeat.autodiscover:
   providers:
@@ -246,6 +234,17 @@ filebeat.autodiscover:
               paths:
                 - /tmp/nomad/alloc/${data.nomad.allocation.id}/alloc/logs/${data.nomad.task.name}.std*
               exclude_lines: ["^\\s+[\\-`('.|_]"]  # drop asciiart lines
+processors:
+  - dissect:
+      tokenizer: "/tmp/nomad/alloc/%%{alloc_id}/alloc/logs/%%{task_name}.std"
+      field: "log.file.path"
+      target_prefix: "nomad"  
+  - copy_fields:
+      fields:
+        - from: nomad.task_name
+          to: event.dataset
+      fail_on_error: false
+      ignore_missing: true
 output.elasticsearch:
   hosts: ["http://${NOMAD_ADDR_es_port}"]
   username: "elastic"
@@ -253,7 +252,12 @@ output.elasticsearch:
   ssl:
     enabled: false
 logging:
+  level: debug
+  to_files: true
   to_stderr: true
+  files:
+    path: /tmp
+    name: filebeat.log
 setup.kibana:
   host: "http://${NOMAD_ADDR_kibana}"
           EOH
@@ -262,10 +266,9 @@ setup.kibana:
 
 
       config {
-        image      = "docker.elastic.co/beats/filebeat:8.6.0"
+        image = "docker.elastic.co/beats/filebeat:8.6.0"
         # entrypoint = ["/usr/bin/sleep", "1d"]
         # command = "filebeat"
-        # ports   = ["es_port", "tcp"]
         volumes = [
           "local/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml",
         ]
@@ -276,28 +279,28 @@ setup.kibana:
           nproc   = "8192"
         }
       }
+
       volume_mount {
         volume      = "tmp_vol"
-        destination = "/tmp/host" #<-- in the container
-        read_only   = true
-      }
-      volume_mount {
-        volume      = "nomad_vol"
-        destination = "/tmp/nomad" #<-- in the container
+        destination = "/tmp/host"
         read_only   = true
       }
 
+      volume_mount {
+        volume      = "nomad_vol"
+        destination = "/tmp/nomad"
+        read_only   = true
+      }
 
       service {
         name     = "filebeat"
         tags     = ["global"]
         provider = "nomad"
-        #port     = "es_port"
       }
 
       resources {
         cpu    = 200
-        memory = 256
+        memory = 512
       }
     }
   }

@@ -5,7 +5,7 @@
 # RUN apk add bash ip6tables pigz sysstat procps lsof kakoune curl unzip
 
 FROM flyio/rchab:sha-272d6db
-RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community/ nomad consul syslog-ng 
+RUN apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community/ nomad consul
 # ARG TARGETPLATFORM=linux/amd64
 # ARG NOMAD_VERSION=1.4.3
 # RUN curl -sOL https://releases.hashicorp.com/nomad/${NOMAD_VERSION}/nomad_${NOMAD_VERSION}_$(echo ${TARGETPLATFORM} | sed 's|/|_|g' | awk -F'_' '{print $1"_"$2}').zip \
